@@ -643,6 +643,27 @@ void SCH_EDIT_FRAME::OnUpdatePCB( wxCommandEvent& event )
     Kiway().ExpressMail( FRAME_PCB_EDITOR, MAIL_PCB_UPDATE, payload, this );
 }
 
+bool SCH_EDIT_FRAME::FetchNetlistFromPCB( std::string& aNetlist )
+{
+    if( Kiface().IsSingle() )
+    {
+        DisplayError( this, _( "Cannot update fetch PCB netlist because eeschema is opened in "
+                               "stand-alone mode, you must launch the KiCad project manager "
+                               "and create a project." ) );
+        return false;
+    }
+
+    KIWAY_PLAYER* player = Kiway().Player( FRAME_PCB_EDITOR, false ); // test open already.
+
+    if( !player )
+    {
+        DisplayError( this, _( "Please open Pcbnew and run back-annotation again" ) );
+        return false;
+    }
+
+    Kiway().ExpressMail( FRAME_PCB_EDITOR, MAIL_PCB_GET_NETLIST, aNetlist, this );
+    return true;
+}
 
 wxFindReplaceData* SCH_EDIT_FRAME::GetFindReplaceData()
 {

@@ -93,15 +93,21 @@ public:
     SCH_REFERENCE( SCH_COMPONENT* aComponent, LIB_PART* aLibComponent,
                    SCH_SHEET_PATH& aSheetPath );
 
-    SCH_COMPONENT* GetComp() const          { return m_RootCmp; }
+    SCH_COMPONENT* GetComp() const             { return m_RootCmp; }
 
-    LIB_PART*      GetLibPart() const       { return m_Entry; }
+    LIB_PART*      GetLibPart() const          { return m_Entry; }
 
     const SCH_SHEET_PATH& GetSheetPath() const { return m_SheetPath; }
 
-    int GetUnit() const                     { return m_Unit; }
+    int GetUnit() const                        { return m_Unit; }
 
-    void SetSheetNumber( int aSheetNumber ) { m_SheetNum = aSheetNumber; }
+    void SetSheetNumber( int aSheetNumber )    { m_SheetNum = aSheetNumber; }
+
+    const wxString GetPath() const
+    {
+        return m_RootCmp ? m_RootCmp->GetPath( &m_SheetPath ) : "";
+    }
+
 
     /**
      * Function Annotate
@@ -335,6 +341,14 @@ public:
     int CheckAnnotation( REPORTER& aReporter );
 
     /**
+     * @brief Check components having same references designator. Must be called with references
+     * sorted by timestamp \ref SortByTimeStamp()
+     * @param aReporter A sink for error messages.  Use NULL_REPORTER if you don't need errors.
+     * @return The number of errors found.
+     */
+    int checkForDuplicatedElements( REPORTER& aReporter );
+
+    /**
      * Function sortByXCoordinate
      * sorts the list of references by X position.
      * <p>
@@ -374,7 +388,7 @@ public:
 
     /**
      * Function SortComponentsByTimeStamp
-     * sort the flat list by Time Stamp.
+     * sort the flat list by Time Stamp (sheet path + timestamp).
      * Useful to detect duplicate Time Stamps
      */
     void SortByTimeStamp()
@@ -427,6 +441,13 @@ public:
      * @return index in aComponentsList if found or -1 if not found
      */
     int FindUnit( size_t aIndex, int aUnit );
+
+    /**
+     * @brief Searches unit with designated path
+     * @param aPath path to search
+     * @return index in aComponentsList if found or -1 if not found
+     */
+    int FindRefByPath( const wxString& aPath ) const;
 
     /**
      * Function GetRefsInUse

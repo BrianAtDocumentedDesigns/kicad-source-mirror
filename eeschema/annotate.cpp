@@ -27,16 +27,15 @@
  */
 
 #include <algorithm>
-
-#include <fctsys.h>
-#include <sch_draw_panel.h>
-#include <confirm.h>
-#include <reporter.h>
-#include <sch_edit_frame.h>
-
-#include <sch_reference_list.h>
+#include <boost/property_tree/ptree.hpp>
 #include <class_library.h>
-
+#include <confirm.h>
+#include <fctsys.h>
+#include <ptree.h>
+#include <reporter.h>
+#include <sch_draw_panel.h>
+#include <sch_edit_frame.h>
+#include <sch_reference_list.h>
 
 void mapExistingAnnotation( std::map<timestamp_t, wxString>& aMap )
 {
@@ -76,6 +75,209 @@ void SCH_EDIT_FRAME::DeleteAnnotation( bool aCurrentSheetOnly )
     SyncView();
     GetCanvas()->Refresh();
     OnModify();
+}
+
+// used locally in back-annotation
+struct PCB_MODULE_DATA
+{
+    wxString ref;
+    wxString value;
+};
+
+using PCB_MODULES      = std::map<wxString, PCB_MODULE_DATA>;
+using PCB_MODULES_ITEM = std::pair<wxString, PCB_MODULE_DATA>;
+using CHANGELIST_ITEM  = std::pair<SCH_REFERENCE, PCB_MODULE_DATA>;
+using CHANGELIST       = std::deque<CHANGELIST_ITEM>;
+
+int getPcbModulesFromCPTREE( const CPTREE& tree, REPORTER& aReporter, PCB_MODULES& aModules )
+{
+    int errors = 0;
+    aModules.clear();
+    for( auto& item : tree )
+    {
+        wxString path, value;
+        wxASSERT( item.first == "ref" );
+        wxString ref = (UTF8&) item.second.front().first;
+        try
+        {
+            path = (UTF8&) item.second.get_child( "timestamp" ).front().first;
+            value = (UTF8&) item.second.get_child( "value" ).front().first;
+        }
+        catch( boost::property_tree::ptree_bad_path& e )
+        {
+            wxASSERT_MSG( true, "Cannot parse PCB netlist for back-annotation" );
+        }
+
+        auto nearestItem = aModules.lower_bound( path );
+        if( nearestItem != aModules.end() && nearestItem->first == path )
+        {
+            wxString msg;
+            msg.Printf( _( "Pcb footprints %s and %s linked to same component" ),
+                    nearestItem->second.ref, ref );
+            aReporter.ReportHead( msg, REPORTER::RPT_ERROR );
+            ++errors;
+        }
+        else
+        {
+            PCB_MODULE_DATA data{ ref, value };
+            aModules.insert( nearestItem, PCB_MODULES_ITEM( path, data ) );
+        }
+    }
+    return errors;
+}
+
+bool SCH_EDIT_FRAME::BackAnnotateComponents(
+        const std::string& aNetlist, REPORTER& aReporter, bool aDryRun )
+{
+    wxString msg;
+    //Read incoming std::string from KiwayMailIn to the property tree
+    DSNLEXER lexer( aNetlist, FROM_UTF8( __func__ ) );
+    PTREE    doc;
+    Scan( &doc, &lexer );
+    CPTREE&     back_anno = doc.get_child( "pcb_netlist" );
+    PCB_MODULES pcbModules;
+    int         errorsFound = getPcbModulesFromCPTREE( back_anno, aReporter, pcbModules );
+
+    // Build the sheet list and get all used components
+    SCH_SHEET_LIST     sheets( g_RootSheet );
+    SCH_REFERENCE_LIST refs;
+    sheets.GetComponents( refs );
+
+    refs.SortByTimeStamp();
+    errorsFound += refs.checkForDuplicatedElements( aReporter );
+
+    // Get all multi units components, such as U1A, U1B, etc...
+    SCH_MULTI_UNIT_REFERENCE_MAP schMultiunits;
+    sheets.GetMultiUnitComponents( schMultiunits );
+    // We will store here pcb components references, which has no representation in shematic
+    std::deque<UTF8> pcbUnconnected;
+
+    // Remove multi units and power symbols here
+    for( size_t i = 0; i < refs.GetCount(); ++i )
+    {
+        if( refs[i].GetComp()->GetUnitCount() > 1
+                or !refs[i].GetComp()->GetPartRef().lock()->IsNormal() )
+            refs.RemoveItem( i-- );
+    }
+
+    // Find links between PCB footprints and schematic components. Once any link found,
+    // component will be removed from corresponding list.
+    CHANGELIST changeList;
+    for( auto& module : pcbModules )
+    {
+        // Data retrieved from PCB
+        const wxString& pcbPath = module.first;
+        const wxString& pcbRef = module.second.ref;
+        const wxString& pcbValue = module.second.value;
+        bool            foundInMultiunit = false;
+
+        for( SCH_MULTI_UNIT_REFERENCE_MAP::iterator part = schMultiunits.begin();
+                part != schMultiunits.end(); ++part )
+        {
+            SCH_REFERENCE_LIST& partRefs = part->second;
+
+            // If pcb unit found in multi unit components, process all units straight away
+            if( partRefs.FindRefByPath( pcbPath ) >= 0 )
+            {
+                foundInMultiunit = true;
+                for( size_t i = 0; i < partRefs.GetCount(); ++i )
+                {
+                    SCH_REFERENCE& schRef = partRefs[i];
+                    if( schRef.GetRef() != pcbRef )
+                        changeList.push_back( CHANGELIST_ITEM( schRef, module.second ) );
+                }
+                schMultiunits.erase( part );
+                break;
+            }
+        }
+        if( foundInMultiunit )
+            // We deleted all multi units from references list, so we don't need to go further
+            continue;
+
+        // Process simple components
+        int refIdx = refs.FindRefByPath( pcbPath );
+        if( refIdx >= 0 )
+        {
+            SCH_REFERENCE& schRef = refs[refIdx];
+            if( schRef.GetRef() != pcbRef )
+                changeList.push_back( CHANGELIST_ITEM( schRef, module.second ) );
+            refs.RemoveItem( refIdx );
+        }
+        else
+        {
+            // We haven't found link between footprint and common units or multi-units
+            msg.Printf( _( "Cannot find component for %s footprint" ), pcbRef );
+            ++errorsFound;
+            aReporter.ReportTail( msg, REPORTER::RPT_ERROR );
+        }
+    }
+
+
+    // Report
+    for( size_t i = 0; i < refs.GetCount(); ++i )
+    {
+        msg.Printf( _( "Cannot find footprint for %s component" ), refs[i].GetRef() );
+        aReporter.ReportTail( msg, REPORTER::RPT_ERROR );
+        ++errorsFound;
+    }
+
+    for( auto& comp : schMultiunits )
+    {
+        auto& refList = comp.second;
+        for( size_t i = 0; i < refList.GetCount(); ++i )
+        {
+            msg.Printf( _( "Cannot find footprint for %s%s component" ), refs[i].GetRef(),
+                    LIB_PART::SubReference( refs[i].GetUnit(), false ) );
+            aReporter.ReportTail( msg, REPORTER::RPT_ERROR );
+        }
+        ++errorsFound;
+    }
+
+    // Apply changes from change list
+    for( auto& item : changeList )
+    {
+        SCH_REFERENCE&   ref = item.first;
+        PCB_MODULE_DATA& module = item.second;
+        if( ref.GetComp()->GetUnitCount() <= 1 )
+            msg.Printf( _( "Change %s -> %s" ), ref.GetRef(), module.ref );
+        else
+        {
+            wxString unit = LIB_PART::SubReference( ref.GetUnit() );
+            msg.Printf( _( "Change %s%s -> %s%s" ), ref.GetRef(), unit, module.ref, unit );
+        }
+        aReporter.ReportHead( msg, aDryRun ? REPORTER::RPT_INFO : REPORTER::RPT_ACTION );
+        if( !aDryRun )
+            item.first.GetComp()->SetRef( &item.first.GetSheetPath(), item.second.ref );
+    }
+
+    // Report
+    if( !errorsFound )
+    {
+        if( !aDryRun )
+        {
+            aReporter.ReportTail( _( "Schematic is back-annotated." ), REPORTER::RPT_ACTION );
+            g_CurrentSheet->UpdateAllScreenReferences();
+            SetSheetNumberAndCount();
+
+            SyncView();
+            OnModify();
+            GetCanvas()->Refresh();
+        }
+        else
+            aReporter.ReportTail(
+                    _( "No errors  during dry run. Ready to go." ), REPORTER::RPT_ACTION );
+    }
+    else
+    {
+        msg.Printf( _( "Found %d errors. Fix them and run back annotation again." ), errorsFound );
+        aReporter.ReportTail( msg, REPORTER::RPT_ERROR );
+    }
+
+
+    if( errorsFound )
+        return false;
+    else
+        return true;
 }
 
 

@@ -503,6 +503,16 @@ public:
                              REPORTER& aReporter );
 
     /**
+     * @brief Back annotate schematics from PCB layout. Annotating is made by unique
+     * paths, which consists of "sheet path/unique Id"
+     * @param aNetlist \ref NETLIST recieved from PCB via KiWay and packed to std::string
+     * @param aReporter A sink for error messages.  Use NULL_REPORTER if you don't need errors.
+     * @param aDryRun if it's dry run
+     * @return true if there no any errors.
+     */
+    bool BackAnnotateComponents( const std::string& aNetlist, REPORTER& aReporter, bool aDryRun );
+
+    /**
      * Check for annotation errors.
      *
      * The following list of items are checked:
@@ -679,6 +689,14 @@ public:
     void OnRemapSymbols( wxCommandEvent& aEvent );
     void OnUpdatePCB( wxCommandEvent& event );
     void OnAnnotate( wxCommandEvent& event );
+
+    /**
+      * @brief Get netlist from PCB editor. Fails if PCB editor closed or
+      * eeschema opened in stand-alone mode
+      * @param aNetlist reference to std::container where netlist will be stored
+      * @return true if success
+      */
+    bool FetchNetlistFromPCB( std::string& aNetlist );
 
 private:
     // Sets up the tool framework

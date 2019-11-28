@@ -69,6 +69,7 @@ private:
     void OnCloseClick( wxCommandEvent& event ) override;
     void OnClose( wxCloseEvent& event ) override;
     void OnApplyClick( wxCommandEvent& event ) override;
+    void OnRbOptionsChanged( wxCommandEvent& event ) override;
 
     // User functions:
     bool GetLevel();
@@ -191,33 +192,55 @@ void DIALOG_ANNOTATE::OnClose( wxCloseEvent& event )
 
 void DIALOG_ANNOTATE::OnApplyClick( wxCommandEvent& event )
 {
-    wxString    message;
-
-    // Ask for confirmation of destructive actions.
-    if( GetResetItems() )
-    {
-        if( GetLevel() )
-            message += _( "Clear and annotate all of the symbols on the entire schematic?" );
-        else
-            message += _( "Clear and annotate all of the symbols on the current sheet?" );
-
-        message += _( "\n\nThis operation will change the current annotation and cannot be undone." );
-
-        KIDIALOG dlg( this, message, _( "Confirmation" ), wxOK | wxCANCEL | wxICON_WARNING );
-        dlg.SetOKLabel( _( "Clear and Annotate" ) );
-        dlg.DoNotShowCheckbox( __FILE__, __LINE__ );
-
-        if( dlg.ShowModal() == wxCANCEL )
-            return;
-    }
 
     m_MessageWindow->Clear();
     REPORTER& reporter = m_MessageWindow->Reporter();
-    m_MessageWindow->SetLazyUpdate( true );     // Don't update after each message
+    m_MessageWindow->SetLazyUpdate( true ); // Don't update after each message
+    wxString message;
+    if( m_rbOptions->GetSelection() == 3 )
+    {
+        message = _( "This operation will change the current annotation and cannot be undone." );
+        KIDIALOG dlg( this, message, _( "Confirmation" ), wxOK | wxCANCEL | wxICON_WARNING );
+        if( dlg.ShowModal() == wxCANCEL )
+            return;
+        std::string netlist;
+        if( !m_Parent->FetchNetlistFromPCB( netlist ) )
+            return;
+        if( !m_Parent->BackAnnotateComponents( netlist, reporter, false ) )
+        {
+            message = _( "Errors occured. Please, fix them and run back-annotation again." );
+            KIDIALOG errDlg( this, message, _( "Error" ), wxOK | wxICON_ERROR );
+            errDlg.ShowModal();
+            wxCommandEvent dummy;
+            m_Parent->OnUpdatePCB( dummy );
+            return;
+        }
+    }
+    else
+    {
+        // Ask for confirmation of destructive actions.
+        if( GetResetItems() )
+        {
+            if( GetLevel() )
+                message += _( "Clear and annotate all of the symbols on the entire schematic?" );
+            else
+                message += _( "Clear and annotate all of the symbols on the current sheet?" );
 
-    m_Parent->AnnotateComponents( GetLevel(), (ANNOTATE_ORDER_T) GetSortOrder(),
-                                  (ANNOTATE_OPTION_T) GetAnnotateAlgo(), GetStartNumber(),
-                                  GetResetItems() , true, GetLockUnits(), reporter );
+            message += _(
+                    "\n\nThis operation will change the current annotation and cannot be undone." );
+
+            KIDIALOG dlg( this, message, _( "Confirmation" ), wxOK | wxCANCEL | wxICON_WARNING );
+            dlg.SetOKLabel( _( "Clear and Annotate" ) );
+            dlg.DoNotShowCheckbox( __FILE__, __LINE__ );
+
+            if( dlg.ShowModal() == wxCANCEL )
+                return;
+        }
+
+        m_Parent->AnnotateComponents( GetLevel(), (ANNOTATE_ORDER_T) GetSortOrder(),
+                (ANNOTATE_OPTION_T) GetAnnotateAlgo(), GetStartNumber(), GetResetItems(), true,
+                GetLockUnits(), reporter );
+    }
 
     m_MessageWindow->Flush( true );                   // Now update to show all messages
 
@@ -302,6 +325,28 @@ int DIALOG_ANNOTATE::GetAnnotateAlgo()
 int DIALOG_ANNOTATE::GetStartNumber()
 {
     return ValueFromString( EDA_UNITS_T::UNSCALED_UNITS, m_textNumberAfter->GetValue() );
+}
+
+void DIALOG_ANNOTATE::OnRbOptionsChanged( wxCommandEvent& event )
+{
+    if( event.GetInt() == 3 )
+    {
+        m_MessageWindow->Clear();
+        REPORTER& reporter = m_MessageWindow->Reporter();
+        m_MessageWindow->SetLazyUpdate( true );
+        std::string netlist;
+        if( !m_Parent->FetchNetlistFromPCB( netlist ) )
+            return;
+        m_Parent->BackAnnotateComponents( netlist, reporter, true );
+        m_MessageWindow->Flush( true );
+        m_Parent->GetCanvas()->Refresh();
+        m_btnClear->Enable();
+    }
+    else
+    {
+        m_MessageWindow->Clear();
+        m_btnClear->Disable();
+    }
 }
 
 
