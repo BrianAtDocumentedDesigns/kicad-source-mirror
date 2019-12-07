@@ -32,6 +32,8 @@
 
 #include <class_board_item.h>
 
+#include <memory>
+
 namespace PNS {
 
 LINE_PLACER::LINE_PLACER( ROUTER* aRouter ) :
@@ -128,7 +130,7 @@ bool LINE_PLACER::handleSelfIntersections()
 
     // if there is more than one intersection, find the one that is
     // closest to the beginning of the tail.
-    for( SHAPE_LINE_CHAIN::INTERSECTION i : ips )
+    for( const SHAPE_LINE_CHAIN::INTERSECTION& i : ips )
     {
         if( i.our.Index() < n )
         {
@@ -947,7 +949,7 @@ void LINE_PLACER::initPlacement()
 
     if( m_currentMode == RM_Shove || m_currentMode == RM_Smart )
     {
-        m_shove.reset( new SHOVE( m_world->Branch(), Router() ) );
+        m_shove = std::make_unique<SHOVE>( m_world->Branch(), Router() );
     }
 }
 

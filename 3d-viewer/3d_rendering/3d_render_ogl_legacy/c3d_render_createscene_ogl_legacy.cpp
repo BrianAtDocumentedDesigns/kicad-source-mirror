@@ -112,11 +112,11 @@ void C3D_RENDER_OGL_LEGACY::generate_ring_contour( const SFVEC2F &aCenter,
                             * 2.0f * glm::pi<float>() / 3600.0f;
         const SFVEC2F rotatedDir = SFVEC2F( cos( angle ), sin( angle ) );
 
-        aInnerContourResult.push_back( SFVEC2F( aCenter.x + rotatedDir.x * aInnerRadius,
-                                                aCenter.y + rotatedDir.y * aInnerRadius ) );
+        aInnerContourResult.emplace_back( aCenter.x + rotatedDir.x * aInnerRadius,
+                                                aCenter.y + rotatedDir.y * aInnerRadius );
 
-        aOuterContourResult.push_back( SFVEC2F( aCenter.x + rotatedDir.x * aOuterRadius,
-                                                aCenter.y + rotatedDir.y * aOuterRadius ) );
+        aOuterContourResult.emplace_back( aCenter.x + rotatedDir.x * aOuterRadius,
+                                                aCenter.y + rotatedDir.y * aOuterRadius );
     }
 
     aInnerContourResult.push_back( aInnerContourResult[0] );
@@ -186,17 +186,17 @@ void C3D_RENDER_OGL_LEGACY::add_object_to_triangle_layer( const CROUNDSEGMENT2D 
                                                           float aZtop,
                                                           float aZbot )
 {
-    const SFVEC2F leftStart   = aSeg->GetLeftStar();
-    const SFVEC2F leftEnd     = aSeg->GetLeftEnd();
-    const SFVEC2F leftDir     = aSeg->GetLeftDir();
+    const SFVEC2F& leftStart   = aSeg->GetLeftStar();
+    const SFVEC2F& leftEnd     = aSeg->GetLeftEnd();
+    const SFVEC2F& leftDir     = aSeg->GetLeftDir();
 
-    const SFVEC2F rightStart  = aSeg->GetRightStar();
-    const SFVEC2F rightEnd    = aSeg->GetRightEnd();
-    const SFVEC2F rightDir    = aSeg->GetRightDir();
+    const SFVEC2F& rightStart  = aSeg->GetRightStar();
+    const SFVEC2F& rightEnd    = aSeg->GetRightEnd();
+    const SFVEC2F& rightDir    = aSeg->GetRightDir();
     const float   radius      = aSeg->GetRadius();
 
-    const SFVEC2F start       = aSeg->GetStart();
-    const SFVEC2F end         = aSeg->GetEnd();
+    const SFVEC2F& start       = aSeg->GetStart();
+    const SFVEC2F& end         = aSeg->GetEnd();
 
     const float texture_factor = (12.0f / (float)SIZE_OF_CIRCLE_TEXTURE) + 1.0f;
     const float texture_factorF= ( 6.0f / (float)SIZE_OF_CIRCLE_TEXTURE) + 1.0f;

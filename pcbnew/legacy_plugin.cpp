@@ -58,13 +58,13 @@
 */
 
 
+#include <cerrno>
 #include <cmath>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstring>
+#include <legacy_plugin.h>   // implement this here
 #include <wx/ffile.h>
 #include <wx/string.h>
-#include <legacy_plugin.h>   // implement this here
 
 #include <kicad_string.h>
 #include <macros.h>
@@ -1008,8 +1008,8 @@ void LEGACY_PLUGIN::loadSETUP()
             if( data )  // DRILL may not be present ?
                 drill = biuParse( data );
 
-            bds.m_ViasDimensionsList.push_back( VIA_DIMENSION( diameter,
-                                                                                        drill ) );
+            bds.m_ViasDimensionsList.emplace_back( diameter,
+                                                                                        drill );
         }
 
         else if( TESTLINE( "ViaSize" ) )
@@ -1758,7 +1758,7 @@ void LEGACY_PLUGIN::loadMODULE_EDGE( MODULE* aModule )
                 BIU x = biuParse( line + SZ( "Dl" ), &data );
                 BIU y = biuParse( data );
 
-                pts.push_back( wxPoint( x, y ) );
+                pts.emplace_back( x, y );
             }
 
             dwg->SetPolyPoints( pts );

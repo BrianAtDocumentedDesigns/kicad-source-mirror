@@ -580,7 +580,7 @@ bool processSolid( const TopoDS_Shape& shape, DATA& data, SGNODE* parent,
     TopoDS_Iterator it;
     IFSG_TRANSFORM childNode( parent );
     SGNODE* pptr = childNode.GetRawPtr();
-    TopLoc_Location loc = shape.Location();
+    const TopLoc_Location& loc = shape.Location();
     bool ret = false;
 
     if( !loc.IsIdentity() )
@@ -634,7 +634,7 @@ bool processComp( const TopoDS_Shape& shape, DATA& data, SGNODE* parent,
     TopoDS_Iterator it;
     IFSG_TRANSFORM childNode( parent );
     SGNODE* pptr = childNode.GetRawPtr();
-    TopLoc_Location loc = shape.Location();
+    const TopLoc_Location& loc = shape.Location();
     bool ret = false;
 
     if( !loc.IsIdentity() )
@@ -839,7 +839,7 @@ bool processFace( const TopoDS_Face& face, DATA& data, SGNODE* parent,
     for(int i = 1; i <= triangulation->NbNodes(); i++)
     {
         gp_XYZ v( arrPolyNodes(i).Coord() );
-        vertices.push_back( SGPOINT( v.X(), v.Y(), v.Z() ) );
+        vertices.emplace_back( v.X(), v.Y(), v.Z() );
     }
 
     for(int i = 1; i <= triangulation->NbTriangles(); i++)

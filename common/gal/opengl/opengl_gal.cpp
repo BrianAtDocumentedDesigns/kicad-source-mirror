@@ -41,8 +41,9 @@
 #include <wx/log.h>
 #endif /* __WXDEBUG__ */
 
-#include <limits>
 #include <functional>
+#include <limits>
+#include <memory>
 using namespace std::placeholders;
 using namespace KIGFX;
 
@@ -226,7 +227,7 @@ OPENGL_GAL::OPENGL_GAL( GAL_DISPLAY_OPTIONS& aDisplayOptions, wxWindow* aParent,
     shader = new SHADER();
     ++instanceCounter;
 
-    bitmapCache.reset( new GL_BITMAP_CACHE );
+    bitmapCache = std::make_unique<GL_BITMAP_CACHE>( );
 
     compositor = new OPENGL_COMPOSITOR;
     compositor->SetAntialiasingMode( options.gl_antialiasing_mode );
@@ -1526,7 +1527,7 @@ void OPENGL_GAL::DeleteGroup( int aGroupNumber )
 
 void OPENGL_GAL::ClearCache()
 {
-    bitmapCache.reset( new GL_BITMAP_CACHE );
+    bitmapCache = std::make_unique<GL_BITMAP_CACHE>( );
 
     groups.clear();
 
@@ -2064,7 +2065,7 @@ void CALLBACK CombineCallback( GLdouble coords[3],
     OPENGL_GAL::TessParams* param = static_cast<OPENGL_GAL::TessParams*>( aData );
 
     // Save the pointer so we can delete it later
-    param->intersectPoints.push_back( boost::shared_array<GLdouble>( vertex ) );
+    param->intersectPoints.emplace_back( vertex );
 
     memcpy( vertex, coords, 3 * sizeof(GLdouble) );
 
