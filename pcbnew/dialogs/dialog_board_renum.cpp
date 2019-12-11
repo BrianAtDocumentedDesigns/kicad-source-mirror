@@ -24,18 +24,10 @@
 
 //
 // To do
-// 1) Redraw screen
-// 2) Translatable
-// 3) Exclude list
-
+// 1) Translatable
+// 2) Update netlist
+//
 #include "dialog_board_renum.h"				//
-
-#include <fctsys.h>
-#include <tool/actions.h>
-#include <frame_type.h>
-#include <tool/tool_manager.h>
-//#include <stdlib.h>
-#include <unistd.h>
 //
 struct DIALOG_BOARD_RENUM_PARAMETERS
 {
@@ -158,6 +150,8 @@ void DIALOG_BOARD_RENUM::OnRenumberClick( wxCommandEvent& event )
 
 wxString    tmps = "\nNo Board!\n";
 wxFileName  filename;
+NETLIST     netlist;
+STRING_FORMATTER stringformatter;
 
 
         if( !m_board->IsEmpty() )
@@ -173,13 +167,25 @@ wxFileName  filename;
             if( s_savedDialogParameters.WriteChangeFile )
                 WriteRenumFile( "_renumchange", ChangeFile ); //Write out the change file
 
-            for ( auto mod : m_modules )                    //Update the old with the new.
-                mod->SetReference( GetNewRefDes( mod->GetReference() ) );
 //
+            for ( auto mod : m_modules )                    //Update the old with the new.
+            mod->SetReference( GetNewRefDes( mod->GetReference() ) );
+//
+            for( auto& mod : m_modules )
+                netlist.AddComponent( new COMPONENT( mod->GetFPID(), mod->GetReference(),	//Populate new component
+                                                                        mod->GetValue(), mod->GetPath() ) );
+
+  			netlist.Format("pcb_netlist", &stringformatter, 0, CTL_OMIT_FILTERS | CTL_OMIT_NETS | CTL_OMIT_FILTERS );
+ 	 	    std::string payload = stringformatter.GetString();		//write netlist back to payload (eeschema will recieve that as payload is sent here as reference)
+        	m_frame->ExecuteRemoteCommand( payload.c_str() );
+
             m_frame->GetToolManager()->RunAction(ACTIONS::zoomFitScreen, true );
             m_frame->GetCanvas()->ForceRefresh();            //is_changed
             m_frame->OnModify();                            //Need to save file on exist.
-            tmps = "\nDone\n\n";
+            tmps = "\nDone!\nNow close this dialog and open the schematic in eeSchema, \n"  \
+                    "Tools->Annotate Schematic, select Back annotate from PCB, \n"          \
+                    "if no errors click Annotate..\n"                                       \
+                    "Then press F8 to update PCB from schematic \n\n";
         }
         m_MessageWindow->AppendText( tmps );
 }
