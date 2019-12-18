@@ -27,7 +27,6 @@
 #include <wx/image.h>
 #include <wx/icon.h>
 #include <wx/dialog.h>
-#include <wx/statbox.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -78,50 +77,6 @@ class DIALOG_BOARD_RENUM_BASE : public wxDialog
 
 		DIALOG_BOARD_RENUM_BASE( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Geographic Reannotaion"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
 		~DIALOG_BOARD_RENUM_BASE();
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-/// Class DIALOG_BOARD_RENUM_CONTINUEABORT_BASE
-///////////////////////////////////////////////////////////////////////////////
-class DIALOG_BOARD_RENUM_CONTINUEABORT_BASE : public wxDialog
-{
-	private:
-
-	protected:
-		wxButton* m_Continue;
-		wxButton* m_Abort;
-
-		// Virtual event handlers, overide them in your derived class
-		virtual void ErrorContinue( wxCommandEvent& event ) { event.Skip(); }
-		virtual void ErrorAbort( wxCommandEvent& event ) { event.Skip(); }
-
-
-	public:
-
-		DIALOG_BOARD_RENUM_CONTINUEABORT_BASE( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 634,127 ), long style = wxCAPTION );
-		~DIALOG_BOARD_RENUM_CONTINUEABORT_BASE();
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-/// Class DIALOG_BOARD_RENUM_ABORT_BASE
-///////////////////////////////////////////////////////////////////////////////
-class DIALOG_BOARD_RENUM_ABORT_BASE : public wxDialog
-{
-	private:
-
-	protected:
-		wxButton* m_Continue;
-
-		// Virtual event handlers, overide them in your derived class
-		virtual void ErrorContinue( wxCommandEvent& event ) { event.Skip(); }
-
-
-	public:
-
-		DIALOG_BOARD_RENUM_ABORT_BASE( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Bottom Start Ref Des too Low"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 244,127 ), long style = wxCAPTION );
-		~DIALOG_BOARD_RENUM_ABORT_BASE();
 
 };
 

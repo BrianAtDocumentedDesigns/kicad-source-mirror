@@ -15,11 +15,9 @@
 #include    <class_text_mod.h>
 #include    <layers_id_colors_and_visibility.h>
 #include    <stdint.h>
-
 #include    <pcb_base_frame.h>
 #include    <pcb_edit_frame.h>
 #include    <project.h>
-#include    <fstream>
 #include    <netlist_reader/pcb_netlist.h>
 
 #include    <fctsys.h>
@@ -74,11 +72,9 @@ public:
     DIALOG_BOARD_RENUM(PCB_EDIT_FRAME* aParentFrame);
     ~DIALOG_BOARD_RENUM();
 
-    void ShowMessage(const char *message);
+    void ShowWarning(const wxString &aMessage);
     void ShowMessage(const wxString &message);
     void FatalError(const wxString &message);
-    void ShowError(const wxString &message);
-    void SetStyle(const char* Colour);
     void GetParameters(void);
 
     int LoadPCBFile(struct KiCadFile &Schematic);
@@ -89,70 +85,26 @@ public:
     MODULES m_modules;
 
 private:
-    PCB_EDIT_FRAME* m_parentFrame;
-
-//    int             m_boardWidth;
-//    int             m_boardHeight;
-//    double          m_boardArea;
-//    bool m_hasOutline;
 
     void OnRenumberClick(wxCommandEvent& event) override;
     void OKDone(wxCommandEvent& event) override;
-//    void MainSize(wxSizeEvent& event) override;
-
 };
 
-class DIALOG_BOARD_RENUM_CONTINUEABORT: public DIALOG_BOARD_RENUM_CONTINUEABORT_BASE {
-public:
-    DIALOG_BOARD_RENUM_CONTINUEABORT(wxWindow* parent, wxWindowID id = wxID_ANY,
-            const wxString& title = wxEmptyString, const wxPoint& pos =
-                    wxDefaultPosition, const wxSize& size = wxSize(362, 127),
-            long style = wxCAPTION | wxDEFAULT_DIALOG_STYLE
-                    | wxFULL_REPAINT_ON_RESIZE);
 
-private:
-    void ErrorContinue(wxCommandEvent& event) override;
-    void ErrorAbort(wxCommandEvent& event) override;
-};
-
-class DIALOG_BOARD_RENUM_ABORT: public DIALOG_BOARD_RENUM_ABORT_BASE {
-public:
-    DIALOG_BOARD_RENUM_ABORT(wxWindow* parent, wxWindowID id = wxID_ANY,
-            const wxString& title = _("Back Start Ref Des too Low"),
-            const wxPoint& pos = wxDefaultPosition,
-            const wxSize& size = wxSize(244, 127),
-            long style = wxCAPTION | wxFULL_REPAINT_ON_RESIZE);
-
-private:
-    void ErrorContinue(wxCommandEvent& event) override;
-};
 
 class MyApp: public wxApp {
 public:
     virtual bool OnInit() override;
 };
 
-void RenumShowMessage(const char *message);
-void RenumShowMessage(std::string &message);
-void RenumShowMessage(const char *message, int arg1);
-void RenumShowMessage(const char *message, std::string& arg1);
-void RenumShowMessage(const char *message, std::string& arg1,
-        std::string& arg2);
-
-void RenumShowWarning(const char *message, int arg1);
-void RenumShowWarning(const char *message, std::string& arg1);
-void RenumShowWarning(const char *message, std::string& arg1,
-        std::string& arg2);
-
-void WriteRenumFile(const char *aFileType, std::string& aBuffer);
-void LogMessage(std::string &aMessage);
-void LogModules(const char *amessage, std::vector<RefDesInfo> &aModules);
+void WriteRenumFile(const char *aFileType, wxString& aBuffer);
+void LogMessage(wxString &aMessage);
+void LogModules( wxString &aMessage, std::vector<RefDesInfo> &aModules);
 void LogRefDesTypes(void);
 void LogChangeArray(void);
 
 void BuildModuleList(MODULES &m_modules);
-void BuildChangeArray(const char*aMessage, std::vector<RefDesInfo> &aModules,
-        unsigned int aStartRefDes);
-wxString GetNewRefDes(wxString aOldRef);
+void BuildChangeArray( std::vector<RefDesInfo> &aModules, unsigned int aStartRefDes);
+wxString& GetNewRefDes(const wxString &aOldRefDes);
 
 #endif /* DIALOG_BOARD_RENUMCLASSES_H_ */
