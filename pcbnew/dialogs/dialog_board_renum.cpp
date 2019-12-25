@@ -29,7 +29,8 @@
 #include    <dialog_board_renum.h>				//
 #include    <fstream>
 #include    <mail_type.h>
-#include "renum_type.h"
+#include    "renum_type.h"
+#include    <confirm.h>
 
 
 #define  RenumShowWarning( m )   {s_savedDialogParameters.RenumDialog->ShowWarning( m );}
@@ -145,11 +146,19 @@ void DIALOG_BOARD_RENUM::OnRenumberClick(wxCommandEvent& event) {
 wxFileName filename;
 NETLIST netlist;
 STRING_FORMATTER stringformatter;
+wxString message;
 
     if ( m_board->IsEmpty())
     {    ShowWarning( _( "\nNo Board!\n"));
         return;
     }
+
+    message = _( "This operation will change the annotation of the PCB and schematic and cannot be undone." );
+    KIDIALOG dlg( this, message, _( "Confirmation" ), wxOK | wxCANCEL | wxICON_WARNING );
+
+
+    if( dlg.ShowModal() == wxID_CANCEL )
+            return;
 
     GetParameters();
     LogFile.clear();                              //Clear the log file
@@ -164,22 +173,26 @@ STRING_FORMATTER stringformatter;
 //write netlist back to payload (eeschema will receive that as payload is sent here as reference)
 //
 std::string payload = stringformatter.GetString();
+
 bool    attemptrenum = m_frame->RenumberSchematic( payload, MAIL_RENUMBER );
 
-    if(( false == attemptrenum ) || ( payload.size() < sizeof( RENUM_OK ) ))        //Didn't get a valid reply
-            ShowWarning( _("\nRenumber failed!\n" ));
+    if(( false == attemptrenum ) || ( 0 == payload.size() ))        //Didn't get a valid reply
+    {
+        message = _("\nRenumber failed!\n" );
+        ShowWarning( message );
+        LogMessage (message );
+    }
     else
     {
-        LogMessage( payload );                           //If generating a log file, save the result
         if( 0 == payload.find( RENUM_OK ))
         {
             m_MessageWindow->AppendText( payload );         //Give the result
             for (auto mod : m_modules)
                 mod->SetReference( GetNewRefDes( mod->GetReference()));     //Update the PCB reference
-            m_MessageWindow->AppendText( _("\nPCB and schematic successfully renumbered\n" ));         //Give the result
+            message = _("\nPCB and schematic successfully renumbered\n" );         //Give the result
+            m_MessageWindow->AppendText( message );         //Give the result
+            payload += message;
         }
-        else
-            ShowWarning( payload );
     }
 
     m_frame->GetToolManager()->RunAction(ACTIONS::zoomFitScreen, true);
