@@ -27,7 +27,7 @@ DIALOG_BOARD_RENUM_BASE::DIALOG_BOARD_RENUM_BASE( wxWindow* parent, wxWindowID i
 
 	fgSizer1->Add( m_FrontSortDirText, 0, wxALL, 5 );
 
-	wxString m_SortDirChoices[] = { _("Top to Bottom, Left to Right"), _("Top to Bottom, Right to Left"), _("Bottom to Top, Left to Right"), _("Bottom to Top, Right to Left"), _("Left to Right, Top to Bottom"), _("Left to Right, Bottom to Top"), _("Right to Left, Top to Bottom"), _("Right to Left, Bottom to Top") };
+	wxString m_SortDirChoices[] = { _("Top to Bottom, Left to Right"), _("Top to Bottom, Right to Left"), _("Bottom to Top, Left to Right"), _("Bottom to Top, Right to Left"), _("Left to Right, Top to Bottom"), _("Left to Right, Bottom to Top"), _("Right to Left, Top to Bottom"), _("Right to Left,  Bottom to Top") };
 	int m_SortDirNChoices = sizeof( m_SortDirChoices ) / sizeof( wxString );
 	m_SortDir = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_SortDirNChoices, m_SortDirChoices, 0 );
 	m_SortDir->SetSelection( 0 );

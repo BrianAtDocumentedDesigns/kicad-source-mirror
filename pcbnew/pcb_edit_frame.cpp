@@ -88,6 +88,7 @@
 #include <netlist_reader/pcb_netlist.h>
 #include <wx/wupdlock.h>
 #include <dialog_drc.h>     // for DIALOG_DRC_WINDOW_NAME definition
+#include "renum_type.h"
 
 #if defined(KICAD_SCRIPTING) || defined(KICAD_SCRIPTING_WXPYTHON)
 #include <python_scripting.h>
@@ -223,6 +224,7 @@ PCB_EDIT_FRAME::PCB_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     GetScreen()->m_Center = false;
 
     SetSize( m_FramePos.x, m_FramePos.y, m_FrameSize.x, m_FrameSize.y );
+
 
     GetScreen()->AddGrid( m_UserGridSize, EDA_UNITS_T::UNSCALED_UNITS, ID_POPUP_GRID_USER );
     GetScreen()->SetGrid( ID_POPUP_GRID_LEVEL_1000 + m_LastGridSizeId  );
@@ -923,6 +925,64 @@ bool PCB_EDIT_FRAME::SetCurrentNetClass( const wxString& aNetClassName )
 
     return change;
 }
+
+bool    PCB_EDIT_FRAME::TestStandalone( void )
+{
+    if( Kiface().IsSingle() )
+    {
+        DisplayError( this, _( "Cannot update the PCB because Pcbnew is opened in stand-alone "
+                               "mode. In order to create or update PCBs from schematics, you "
+                               "must launch the KiCad project manager and create a project." ) );
+        return false;
+    }
+
+    KIWAY_PLAYER* frame = Kiway().Player( FRAME_SCH, true );
+
+    if( !frame->IsShown() )
+    {
+        wxFileName schfn( Prj().GetProjectPath(), Prj().GetProjectName(), SchematicFileExtension );
+
+        frame->OpenProjectFiles( std::vector<wxString>( 1, schfn.GetFullPath() ) );
+
+        // we show the schematic editor frame, because do not show is seen as
+        // a not yet opened schematic by Kicad manager, which is not the case
+        frame->Show( true );
+
+        // bring ourselves back to the front
+        Raise();
+    }
+    return true;            //Success!
+
+}
+
+//
+// Sends a Netlist packet to eeSchema. Either test (aCommit is false) or commit (aCommit is true )
+// The reply is in aNetlist so it is destroyed by this
+//
+bool PCB_EDIT_FRAME::RenumberSchematic( std::string& aNetlist, MAIL_T aMode )
+{
+    if( !TestStandalone( )) return false;       //Not in standalone mode
+
+    Kiway().ExpressMail( FRAME_SCH, aMode, aNetlist, this );
+
+    try
+    {
+//        auto lineReader = new STRING_LINE_READER( payload, _( "Eeschema netlist" ) );
+//        KICAD_NETLIST_READER netlistReader( lineReader, &aNetlist );
+//        netlistReader.LoadNetlist();
+//    Kiway().ExpressMail( FRAME_SCH, MAIL_SCH_GET_NETLIST, payload, this );
+
+    }
+    catch( const IO_ERROR& )
+    {
+        assert( false ); // should never happen
+        return false;
+    }
+
+    return true;
+}
+
+
 
 
 bool PCB_EDIT_FRAME::FetchNetlistFromSchematic( NETLIST& aNetlist, FETCH_NETLIST_MODE aMode )

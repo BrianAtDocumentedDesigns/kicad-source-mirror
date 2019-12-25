@@ -87,6 +87,12 @@ public:
     ///> If the m_showAll option is set, the mask is < 0
     int GetVisibleSeverities();
 
+    ///> return a wxString containing the text of the report
+    ///>
+    void GetReport( wxString &aReportString, const REPORTER::SEVERITY aSeverity );
+    void GetReportHead( wxString &aReportString, const REPORTER::SEVERITY aSeverity );
+    void GetReportTail( wxString &aReportString, const REPORTER::SEVERITY aSeverity );
+
 private:
     struct REPORT_LINE
     {

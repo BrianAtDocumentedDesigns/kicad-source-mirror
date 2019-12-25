@@ -42,7 +42,6 @@
 #include <tools/ee_actions.h>
 #include <tools/sch_editor_control.h>
 
-
 SCH_ITEM* SCH_EDITOR_CONTROL::FindComponentAndItem( const wxString& aReference,
                                                     bool            aSearchHierarchy,
                                                     SCH_SEARCH_T    aSearchType,
@@ -456,6 +455,12 @@ void SCH_EDIT_FRAME::KiwayMailIn( KIWAY_EXPRESS& mail )
         if( SaveProject() )
             payload = "success";
         break;
+
+    case MAIL_RENUMBER:                //Renumber the schematic as per the netlist.
+    {
+        AnnotateFromPCBNew( payload );
+        break;
+    }
 
     default:
         ;

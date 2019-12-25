@@ -102,6 +102,8 @@ void LogMessage(wxString &aMessage);
 void LogModules( wxString &aMessage, std::vector<RefDesInfo> &aModules);
 void LogRefDesTypes(void);
 void LogChangeArray(void);
+void LogMessage(wxString &aMessage);
+void LogMessage(std::string &aMessage);
 
 void BuildModuleList(MODULES &m_modules);
 void BuildChangeArray( std::vector<RefDesInfo> &aModules, unsigned int aStartRefDes);

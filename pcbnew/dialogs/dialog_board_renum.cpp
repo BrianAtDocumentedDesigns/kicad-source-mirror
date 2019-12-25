@@ -24,10 +24,13 @@
 
 //
 // To do
-// 1) Translatable
 //
+
 #include    <dialog_board_renum.h>				//
 #include    <fstream>
+#include    <mail_type.h>
+#include "renum_type.h"
+
 
 #define  RenumShowWarning( m )   {s_savedDialogParameters.RenumDialog->ShowWarning( m );}
 #define  Swap( a, b ) { int t; t = a; a = b; b = t;}
@@ -152,29 +155,42 @@ STRING_FORMATTER stringformatter;
     LogFile.clear();                              //Clear the log file
     BuildModuleList(m_modules);
 
+    for (auto mod : m_modules) {    // Create a "test" netlist to see it it will work
+        netlist.AddComponent(
+                    new COMPONENT(mod->GetFPID(), GetNewRefDes( mod->GetReference()), mod->GetValue(), mod->GetPath()));
+    }
+    netlist.Format("pcb_netlist", &stringformatter, 0, CTL_OMIT_FILTERS | CTL_OMIT_NETS | CTL_OMIT_FILTERS);
+//
+//write netlist back to payload (eeschema will receive that as payload is sent here as reference)
+//
+std::string payload = stringformatter.GetString();
+bool    attemptrenum = m_frame->RenumberSchematic( payload, MAIL_RENUMBER );
+
+    if(( false == attemptrenum ) || ( payload.size() < sizeof( RENUM_OK ) ))        //Didn't get a valid reply
+            ShowWarning( _("\nRenumber failed!\n" ));
+    else
+    {
+        LogMessage( payload );                           //If generating a log file, save the result
+        if( 0 == payload.find( RENUM_OK ))
+        {
+            m_MessageWindow->AppendText( payload );         //Give the result
+            for (auto mod : m_modules)
+                mod->SetReference( GetNewRefDes( mod->GetReference()));     //Update the PCB reference
+            m_MessageWindow->AppendText( _("\nPCB and schematic successfully renumbered\n" ));         //Give the result
+        }
+        else
+            ShowWarning( payload );
+    }
+
+    m_frame->GetToolManager()->RunAction(ACTIONS::zoomFitScreen, true);
+    m_frame->GetCanvas()->ForceRefresh( );            //is_changed
+    m_frame->OnModify();                             //Need to save file on exist.
+
     if (s_savedDialogParameters.WriteLogFile)
         WriteRenumFile("_renumlog", LogFile ); //Write out the log file
 
     if (s_savedDialogParameters.WriteChangeFile)
         WriteRenumFile("_renumchange", ChangeFile ); //Write out the change file
-
-    for (auto mod : m_modules) {
-        mod->SetReference( GetNewRefDes( mod->GetReference() ) );    //Update the old with the new.
-        netlist.AddComponent(
-                    new COMPONENT(mod->GetFPID(), mod->GetReference(), mod->GetValue(), mod->GetPath()));
-    }
-    netlist.Format("pcb_netlist", &stringformatter, 0,
-                CTL_OMIT_FILTERS | CTL_OMIT_NETS | CTL_OMIT_FILTERS);
-    std::string payload = stringformatter.GetString();//write netlist back to payload (eeschema will recieve that as payload is sent here as reference)
-    m_frame->ExecuteRemoteCommand(payload.c_str());
-
-    m_frame->GetToolManager()->RunAction(ACTIONS::zoomFitScreen, true);
-    m_frame->GetCanvas()->ForceRefresh();            //is_changed
-    m_frame->OnModify();                             //Need to save file on exist.
-    m_MessageWindow->AppendText( _( "\nDone!\nNow close this dialog and open the schematic in eeSchema, \n"
-                "Tools->Annotate Schematic, select Back annotate from PCB, \n"
-                "if no errors click Annotate..\n"
-                "Then press F8 to update PCB from schematic \n\n" ));
 }
 
 void DIALOG_BOARD_RENUM::OKDone(wxCommandEvent& event) {
@@ -263,6 +279,12 @@ std::ofstream tmphandle(fullfilename, std::ios::trunc); //Open the file for writ
         RenumShowWarning( _( "\n\nCan't write ") + fullfilename );
     }
     tmphandle.close();
+}
+
+void LogMessage(std::string &aMessage) {
+    if (!s_savedDialogParameters.WriteLogFile)
+        return;
+    LogFile += wxString (aMessage );
 }
 
 void LogMessage(wxString &aMessage) {

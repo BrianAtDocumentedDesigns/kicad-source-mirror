@@ -375,9 +375,11 @@ void PCB_EDIT_FRAME::KiwayMailIn( KIWAY_EXPRESS& mail )
 
         if( importFormat >= 0 )
             importFile( path, importFormat );
+
+        break;
     }
 
-    // many many others.
+// many many others.
     default:
         ;
     }

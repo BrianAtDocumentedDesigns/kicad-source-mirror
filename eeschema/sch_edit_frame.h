@@ -513,6 +513,14 @@ public:
     bool BackAnnotateComponents( const std::string& aNetlist, REPORTER& aReporter, bool aDryRun );
 
     /**
+     * This is called from cross-probing to first to a dry run, then if no commits, backannotate the schematic with the netlis
+     * It replies with an error list or a "no errors" message
+     */
+
+    void    AnnotateFromPCBNew( std::string& aPayload );
+
+
+    /**
      * Check for annotation errors.
      *
      * The following list of items are checked:

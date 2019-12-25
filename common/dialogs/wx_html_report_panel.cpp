@@ -62,7 +62,6 @@ REPORTER& WX_HTML_REPORT_PANEL::Reporter()
     return m_reporter;
 }
 
-
 void WX_HTML_REPORT_PANEL::Report( const wxString& aText, REPORTER::SEVERITY aSeverity,
         REPORTER::LOCATION aLocation )
 {
@@ -129,6 +128,25 @@ void WX_HTML_REPORT_PANEL::scrollToBottom()
     updateBadges();
 }
 
+//
+// Get report for particular severity
+//
+void WX_HTML_REPORT_PANEL::GetReportHead( wxString &aReportString, const REPORTER::SEVERITY aSeverity )
+{
+    for( auto rpt : m_reportHead )
+        if( aSeverity == rpt.severity ) aReportString += rpt.message + "\n";
+}
+
+void WX_HTML_REPORT_PANEL::GetReportTail( wxString &aReportString, const REPORTER::SEVERITY aSeverity )
+{
+    for( auto rpt : m_reportTail )
+        if( aSeverity == rpt.severity ) aReportString += rpt.message + "\n";
+}
+void WX_HTML_REPORT_PANEL::GetReport( wxString &aReportString, const REPORTER::SEVERITY aSeverity )
+{
+    for( auto rpt : m_report )
+        if( aSeverity == rpt.severity ) aReportString += rpt.message + "\n";
+}
 
 #define BADGE_SIZE       20
 #define BADGE_FONT_SIZE  10

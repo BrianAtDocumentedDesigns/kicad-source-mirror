@@ -75,7 +75,7 @@ class DIALOG_BOARD_RENUM_BASE : public wxDialog
 
 	public:
 
-		DIALOG_BOARD_RENUM_BASE( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Geographic Reannotaion"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+		DIALOG_BOARD_RENUM_BASE( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Geographic Reannotaion "), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
 		~DIALOG_BOARD_RENUM_BASE();
 
 };
