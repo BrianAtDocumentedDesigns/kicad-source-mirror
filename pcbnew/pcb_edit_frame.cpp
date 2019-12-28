@@ -952,7 +952,6 @@ bool    PCB_EDIT_FRAME::TestStandalone( void )
         Raise();
     }
     return true;            //Success!
-
 }
 
 //
@@ -961,8 +960,6 @@ bool    PCB_EDIT_FRAME::TestStandalone( void )
 //
 bool PCB_EDIT_FRAME::RenumberSchematic( std::string& aNetlist, MAIL_T aMode )
 {
-    if( !TestStandalone( )) return false;       //Not in standalone mode
-
     Kiway().ExpressMail( FRAME_SCH, aMode, aNetlist, this );
 
     try
@@ -987,32 +984,7 @@ bool PCB_EDIT_FRAME::RenumberSchematic( std::string& aNetlist, MAIL_T aMode )
 
 bool PCB_EDIT_FRAME::FetchNetlistFromSchematic( NETLIST& aNetlist, FETCH_NETLIST_MODE aMode )
 {
-    if( Kiface().IsSingle() )
-    {
-        DisplayError( this, _( "Cannot update the PCB because Pcbnew is opened in stand-alone "
-                               "mode. In order to create or update PCBs from schematics, you "
-                               "must launch the KiCad project manager and create a project." ) );
-        return false;
-    }
-
-    // Update PCB requires a netlist. Therefore the schematic editor must be running
-    // If this is not the case, open the schematic editor
-    KIWAY_PLAYER* frame = Kiway().Player( FRAME_SCH, true );
-
-    if( !frame->IsShown() )
-    {
-        wxFileName schfn( Prj().GetProjectPath(), Prj().GetProjectName(), SchematicFileExtension );
-
-        frame->OpenProjectFiles( std::vector<wxString>( 1, schfn.GetFullPath() ) );
-
-        // we show the schematic editor frame, because do not show is seen as
-        // a not yet opened schematic by Kicad manager, which is not the case
-        frame->Show( true );
-
-        // bring ourselves back to the front
-        Raise();
-    }
-
+    if( !TestStandalone( )) return false;       //Not in standalone mode
     std::string payload;
 
     if( aMode == NO_ANNOTATION )

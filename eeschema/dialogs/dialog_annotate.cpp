@@ -201,7 +201,7 @@ void DIALOG_ANNOTATE::OnApplyClick( wxCommandEvent& event )
     {
         message = _( "This operation will change the current annotation and cannot be undone." );
         KIDIALOG dlg( this, message, _( "Confirmation" ), wxOK | wxCANCEL | wxICON_WARNING );
-        if( dlg.ShowModal() == wxCANCEL )
+        if( dlg.ShowModal() == wxID_CANCEL )
             return;
         std::string netlist;
         if( !m_Parent->FetchNetlistFromPCB( netlist ) )
@@ -233,7 +233,7 @@ void DIALOG_ANNOTATE::OnApplyClick( wxCommandEvent& event )
             dlg.SetOKLabel( _( "Clear and Annotate" ) );
             dlg.DoNotShowCheckbox( __FILE__, __LINE__ );
 
-            if( dlg.ShowModal() == wxCANCEL )
+            if( dlg.ShowModal() == wxID_CANCEL)
                 return;
         }
 

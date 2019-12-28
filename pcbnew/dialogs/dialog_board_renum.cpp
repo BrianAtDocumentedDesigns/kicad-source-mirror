@@ -149,19 +149,19 @@ STRING_FORMATTER stringformatter;
 wxString message;
 
     if ( m_board->IsEmpty())
-    {    ShowWarning( _( "\nNo Board!\n"));
+    {    ShowWarning( _( "\nNo Board to re-annotate!\n"));
         return;
     }
-
     message = _( "This operation will change the annotation of the PCB and schematic and cannot be undone." );
     KIDIALOG dlg( this, message, _( "Confirmation" ), wxOK | wxCANCEL | wxICON_WARNING );
-
-
     if( dlg.ShowModal() == wxID_CANCEL )
-            return;
+        return;
 
-    GetParameters();
-    LogFile.clear();                              //Clear the log file
+    if( !m_frame->TestStandalone( ))
+        return;       //Not in standalone mode
+
+    GetParameters();                              //Figure out how this is to be done
+    LogFile.clear();
     BuildModuleList(m_modules);
 
     for (auto mod : m_modules) {    // Create a "test" netlist to see it it will work

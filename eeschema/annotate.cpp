@@ -129,7 +129,7 @@ int getPcbModulesFromCPTREE( const CPTREE& tree, REPORTER& aReporter, PCB_MODULE
     return errors;
 }
 
-
+//
 void    SCH_EDIT_FRAME::AnnotateFromPCBNew( std::string& aPayload )
 {
     //
